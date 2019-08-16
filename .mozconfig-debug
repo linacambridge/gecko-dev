@@ -1,0 +1,8 @@
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-fx-debug
+
+ac_add_options --enable-debug
+ac_add_options --enable-logrefcnt
+ac_add_options --enable-application=browser
+ac_add_options --disable-crashreporter
+
+ac_add_options --with-ccache=$HOME/.cargo/bin/sccache
