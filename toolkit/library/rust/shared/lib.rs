@@ -46,6 +46,8 @@ extern crate bitsdownload;
 extern crate storage;
 #[cfg(feature = "moz_places")]
 extern crate bookmark_sync;
+#[cfg(feature = "rust_logins")]
+extern crate passwordmgr;
 extern crate shift_or_euc_c;
 
 extern crate arrayvec;

@@ -1282,6 +1282,7 @@ dependencies = [
  "netwerk_helper 0.0.1",
  "nserror 0.1.0",
  "nsstring 0.1.0",
+ "passwordmgr 0.1.0",
  "prefs_parser 0.0.1",
  "profiler_helper 0.1.0",
  "rsdparsa_capi 0.1.0",
@@ -2188,6 +2189,17 @@ dependencies = [
  "rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.6 (git+https://github.com/froydnj/winapi-rs?branch=aarch64)",
+]
+
+[[package]]
+name = "passwordmgr"
+version = "0.1.0"
+dependencies = [
+ "moz_task 0.1.0",
+ "nserror 0.1.0",
+ "nsstring 0.1.0",
+ "thin-vec 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "xpcom 0.1.0",
 ]
 
 [[package]]

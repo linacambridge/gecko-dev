@@ -72,5 +72,11 @@ XPCOM_MANIFESTS += [
 
 JAR_MANIFESTS += ['jar.mn']
 
+if CONFIG['MOZ_RUST_LOGINS']:
+    EXPORTS.mozilla += [
+        'RustLoginManager.h',
+    ]
+    EXTRA_JS_MODULES += ['RustLoginManagerWrapper.jsm']
+
 with Files('**'):
     BUG_COMPONENT = ('Toolkit', 'Password Manager')

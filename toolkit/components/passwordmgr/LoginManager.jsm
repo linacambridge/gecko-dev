@@ -50,6 +50,7 @@ function LoginManager() {
 LoginManager.prototype = {
   classID: Components.ID("{cb9e0de8-3598-4ed7-857b-827f011ad5d8}"),
   QueryInterface: ChromeUtils.generateQI([
+    Ci.nsILoginManagerBase,
     Ci.nsILoginManager,
     Ci.nsISupportsWeakReference,
     Ci.nsIInterfaceRequestor,
