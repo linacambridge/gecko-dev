@@ -1,17 +1,23 @@
 #![allow(non_snake_case)]
 
+use std::{cell::RefCell, path::PathBuf};
+
 #[macro_use]
 extern crate xpcom;
+
+#[macro_use]
+extern crate cstr;
 
 use nserror::{nsresult, NS_OK, NS_ERROR_NOT_IMPLEMENTED};
 use nsstring::{nsAString, nsString};
 use thin_vec::ThinVec;
 use xpcom::{
     interfaces::{
-        nsILoginManagerBase, nsILoginInfo, nsISupports, nsIPropertyBag,
+        nsILoginManagerBase, nsILoginInfo, nsISupports, nsIPropertyBag, nsIFile,
     },
     RefPtr, XpCom,
 };
+use logins::{PasswordEngine, Error};
 
 #[no_mangle]
 pub unsafe extern "C" fn NS_NewRustLoginManager(
@@ -25,13 +31,54 @@ pub unsafe extern "C" fn NS_NewRustLoginManager(
 #[xpimplements(nsILoginManagerBase)]
 #[refcnt = "nonatomic"]
 pub struct InitLoginManager {
-    // ...
+    engine: PasswordEngine,
+}
+
+fn get_profile_dir() -> PathBuf {
+    // We can't use getter_addrefs() here because get_DirectoryService()
+    // returns its nsIProperties interface, and its Get() method returns
+    // a directory via its nsQIResult out param, which gets translated to
+    // a `*mut *mut libc::c_void` in Rust, whereas getter_addrefs() expects
+    // a closure with a `*mut *const T` parameter.
+
+    let dir_svc = xpcom::services::get_DirectoryService().expect("Can't get directory service");
+    let mut profile_dir = xpcom::GetterAddrefs::<nsIFile>::new();
+    unsafe {
+        dir_svc
+            .Get(
+                cstr!("ProfD").as_ptr(),
+                &nsIFile::IID,
+                profile_dir.void_ptr(),
+            )
+            .to_result()
+            .or_else(|_| {
+                dir_svc
+                    .Get(
+                        cstr!("ProfDS").as_ptr(),
+                        &nsIFile::IID,
+                        profile_dir.void_ptr(),
+                    )
+                    .to_result()
+            })
+            .expect("Can't get profile dir");
+    }
+    let profile_dir = profile_dir.refptr().expect("Can't QI to `nsIFile`");
+
+    let mut profile_path = nsString::new();
+    unsafe {
+        profile_dir.GetPath(&mut *profile_path).to_result().expect("Can't get profile directory path");
+    }
+
+    let path = String::from_utf16(&profile_path[..]).expect("Can't convert profile path to string");
+    PathBuf::from(&path)
 }
 
 impl LoginManager {
     pub fn new() -> RefPtr<LoginManager> {
+        let mut path = get_profile_dir();
+        path.push("logins2.sqlite");
         LoginManager::allocate(InitLoginManager {
-            // ...
+            engine: PasswordEngine::new(path, None).expect("Failed to open DB"),
         })
     }
 
