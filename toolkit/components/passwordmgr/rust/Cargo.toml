@@ -19,5 +19,5 @@ features = ["gecko-ffi"]
 
 [dependencies.logins]
 git = "https://github.com/mozilla/application-services.git"
-branch = "fix-ensure-initialized"
+branch = "no-sqlcipher-logins"
 features = []
