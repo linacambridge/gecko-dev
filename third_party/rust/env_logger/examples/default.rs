@@ -22,12 +22,9 @@ extern crate env_logger;
 use env_logger::Env;
 
 fn main() {
-    // The `Env` lets us tweak what the environment
-    // variables to read are and what the default
-    // value is if they're missing
     let env = Env::default()
-        .filter_or("MY_LOG_LEVEL", "trace")
-        .write_style_or("MY_LOG_STYLE", "always");
+        .filter("MY_LOG_LEVEL")
+        .write_style("MY_LOG_STYLE");
 
     env_logger::init_from_env(env);
 

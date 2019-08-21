@@ -1,7 +1,9 @@
-env_logger [![Build Status](https://travis-ci.org/sebasmagri/env_logger.svg?branch=master)](https://travis-ci.org/sebasmagri/env_logger) [![Maintenance](https://img.shields.io/badge/maintenance-actively%20maintained-brightgreen.svg)](https://github.com/sebasmagri/env_logger) [![crates.io](https://img.shields.io/crates/v/env_logger.svg)](https://crates.io/crates/env_logger) [![Documentation](https://img.shields.io/badge/docs-current-blue.svg)](https://docs.rs/env_logger)
+env_logger [![Build Status](https://travis-ci.org/sebasmagri/env_logger.svg?branch=master)](https://travis-ci.org/sebasmagri/env_logger)
 ==========
 
-Implements a logger that can be configured via environment variables.
+Implements a logger that can be configured via an environment variable.
+
+* [`env_logger` documentation](https://docs.rs/env_logger)
 
 ## Usage
 
@@ -16,7 +18,7 @@ It must be added along with `log` to the project dependencies:
 ```toml
 [dependencies]
 log = "0.4.0"
-env_logger = "0.6.2"
+env_logger = "0.5.6"
 ```
 
 `env_logger` must be initialized as early as possible in the project. After it's initialized, you can use the `log` macros to do actual logging.
@@ -40,10 +42,8 @@ environment variable that corresponds with the log messages you want to show.
 
 ```bash
 $ RUST_LOG=info ./main
-[2018-11-03T06:09:06Z INFO  default] starting up
+INFO: 2017-11-09T02:12:24Z: main: starting up
 ```
-
-`env_logger` can be configured in other ways besides an environment variable. See [the examples](https://github.com/sebasmagri/env_logger/tree/master/examples) for more approaches.
 
 ### In tests
 
@@ -54,7 +54,7 @@ Tests can use the `env_logger` crate to see log messages generated during that t
 log = "0.4.0"
 
 [dev-dependencies]
-env_logger = "0.6.2"
+env_logger = "0.5.6"
 ```
 
 ```rust
@@ -71,22 +71,16 @@ mod tests {
     use super::*;
     extern crate env_logger;
 
-    fn init() {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
-
     #[test]
     fn it_adds_one() {
-        init();
-
+        let _ = env_logger::try_init();
         info!("can log from the test too");
         assert_eq!(3, add_one(2));
     }
 
     #[test]
     fn it_handles_negative_numbers() {
-        init();
-
+        let _ = env_logger::try_init();
         info!("logging from another test");
         assert_eq!(-7, add_one(-8));
     }
@@ -101,11 +95,11 @@ $ RUST_LOG=my_lib=info cargo test
      Running target/debug/my_lib-...
 
 running 2 tests
-[INFO my_lib::tests] logging from another test
-[INFO my_lib] add_one called with -8
+INFO: 2017-11-09T02:12:24Z: my_lib::tests: logging from another test
+INFO: 2017-11-09T02:12:24Z: my_lib: add_one called with -8
 test tests::it_handles_negative_numbers ... ok
-[INFO my_lib::tests] can log from the test too
-[INFO my_lib] add_one called with 2
+INFO: 2017-11-09T02:12:24Z: my_lib::tests: can log from the test too
+INFO: 2017-11-09T02:12:24Z: my_lib: add_one called with 2
 test tests::it_adds_one ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured
@@ -123,8 +117,8 @@ $ RUST_LOG=my_lib=info cargo test it_adds_one
      Running target/debug/my_lib-...
 
 running 1 test
-[INFO my_lib::tests] can log from the test too
-[INFO my_lib] add_one called with 2
+INFO: 2017-11-09T02:12:24Z: my_lib::tests: can log from the test too
+INFO: 2017-11-09T02:12:24Z: my_lib: add_one called with 2
 test tests::it_adds_one ... ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured
@@ -139,14 +133,10 @@ you can use the `Builder` to change the log target:
 use std::env;
 use env_logger::{Builder, Target};
 
-let mut builder = Builder::from_default_env();
+let mut builder = Builder::new();
 builder.target(Target::Stdout);
-
+if env::var("RUST_LOG").is_ok() {
+    builder.parse(&env::var("RUST_LOG").unwrap());
+}
 builder.init();
 ```
-
-## Stability of the default format
-
-The default format won't optimise for long-term stability, and explicitly makes no guarantees about the stability of its output across major, minor or patch version bumps during `0.x`.
-
-If you want to capture or interpret the output of `env_logger` programmatically then you should use a custom format.

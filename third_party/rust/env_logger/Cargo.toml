@@ -3,7 +3,7 @@
 # When uploading crates to the registry Cargo will automatically
 # "normalize" Cargo.toml files for maximal compatibility
 # with all versions of Cargo and also rewrite `path` dependencies
-# to registry (e.g., crates.io) dependencies
+# to registry (e.g. crates.io) dependencies
 #
 # If you believe there's an error in this file please file an
 # issue against the rust-lang/cargo repository. If you're
@@ -12,7 +12,7 @@
 
 [package]
 name = "env_logger"
-version = "0.6.2"
+version = "0.5.6"
 authors = ["The Rust Project Developers"]
 description = "A logging implementation for `log` which is configured via an environment\nvariable.\n"
 documentation = "https://docs.rs/env_logger"
@@ -29,29 +29,22 @@ harness = false
 [[test]]
 name = "log-in-log"
 harness = false
-
-[[test]]
-name = "init-twice-retains-filter"
-harness = false
 [dependencies.atty]
-version = "0.2.5"
-optional = true
+version = "0.2"
 
 [dependencies.humantime]
-version = "1.1"
-optional = true
+version = "1.1.0"
 
 [dependencies.log]
-version = "0.4"
+version = "0.4.0"
 features = ["std"]
 
 [dependencies.regex]
-version = "1.0.3"
+version = "0.2"
 optional = true
 
 [dependencies.termcolor]
-version = "1.0.2"
-optional = true
+version = "0.3"
 
 [features]
-default = ["termcolor", "atty", "humantime", "regex"]
+default = ["regex"]
