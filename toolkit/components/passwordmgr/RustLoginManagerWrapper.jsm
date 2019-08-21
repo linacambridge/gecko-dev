@@ -7,6 +7,9 @@ const { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
 
 function RustLoginManagerWrapper() {
   this.initializationPromise = Promise.resolve();
+  this._backend = Cc["@mozilla.org/login-manager/rust;1"].getService(
+    Ci.nsILoginManagerBase
+  );
 }
 
 RustLoginManagerWrapper.prototype = {
@@ -16,6 +19,18 @@ RustLoginManagerWrapper.prototype = {
     Ci.nsILoginManager,
     Ci.nsISupportsWeakReference,
   ]),
+
+  addLogin(login) {
+    return this._backend.addLogin(login);
+  },
+
+  removeAllLogins() {
+    this._backend.removeAllLogins();
+  },
+
+  getAllDisabledHosts() {
+    return [];
+  },
 
   async addLogins(logins) {
     throw new Error("Not implemented");

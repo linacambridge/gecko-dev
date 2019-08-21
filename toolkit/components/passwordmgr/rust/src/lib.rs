@@ -9,7 +9,7 @@ extern crate xpcom;
 extern crate cstr;
 
 use logins::{Error, Login, PasswordEngine};
-use nserror::{nsresult, NS_ERROR_NOT_IMPLEMENTED, NS_OK};
+use nserror::{nsresult, NS_ERROR_NOT_IMPLEMENTED, NS_OK, NS_ERROR_FAILURE};
 use nsstring::{nsAString, nsString};
 use thin_vec::ThinVec;
 use uuid::Uuid;
@@ -24,6 +24,181 @@ use xpcom::{
 pub unsafe extern "C" fn NS_NewRustLoginManager(result: *mut *const nsILoginManagerBase) {
     let manager = LoginManager::new();
     RefPtr::new(manager.coerce::<nsILoginManagerBase>()).forget(&mut *result);
+}
+
+#[derive(xpcom)]
+#[xpimplements(nsILoginInfo, nsILoginMetaInfo)]
+#[refcnt = "nonatomic"]
+struct InitRawLogin {
+    login: Login,
+}
+
+// `nsILoginInfo` methods.
+impl RawLogin {
+    xpcom_method!(init => Init(aOrigin: *const nsAString, aFormActionOrigin: *const nsAString, aHttpRealm: *const nsAString, aUsername: *const nsAString, aPassword: *const nsAString, aUsernameField: *const nsAString, aPasswordField: *const nsAString));
+    fn init(&self, origin: &nsAString, form_action_origin: Option<&nsAString>, http_realm: Option<&nsAString>, username: Option<&nsAString>, password: Option<&nsAString>, username_field: Option<&nsAString>, password_field: Option<&nsAString>) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_origin => GetOrigin() -> nsAString);
+    fn get_origin(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.hostname))
+    }
+
+    xpcom_method!(set_origin => SetOrigin(origin: *const nsAString));
+    fn set_origin(&self, origin: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_hostname => GetHostname() -> nsAString);
+    fn get_hostname(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.hostname))
+    }
+
+    xpcom_method!(set_hostname => SetHostname(hostname: *const nsAString));
+    fn set_hostname(&self, hostname: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_form_action_origin => GetFormActionOrigin() -> nsAString);
+    fn get_form_action_origin(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.form_submit_url.clone().unwrap_or_default()))
+    }
+
+    xpcom_method!(set_form_action_origin => SetFormActionOrigin(origin: *const nsAString));
+    fn set_form_action_origin(&self, origin: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_form_submit_url => GetFormSubmitURL() -> nsAString);
+    fn get_form_submit_url(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.form_submit_url.clone().unwrap_or_default()))
+    }
+
+    xpcom_method!(set_form_submit_url => SetFormSubmitURL(origin: *const nsAString));
+    fn set_form_submit_url(&self, form_submit_url: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_http_realm => GetHttpRealm() -> nsAString);
+    fn get_http_realm(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.http_realm.clone().unwrap_or_default()))
+    }
+
+    xpcom_method!(set_http_realm => SetHttpRealm(http_realm: *const nsAString));
+    fn set_http_realm(&self, http_realm: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_username => GetUsername() -> nsAString);
+    fn get_username(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.username))
+    }
+
+    xpcom_method!(set_username => SetUsername(origin: *const nsAString));
+    fn set_username(&self, username: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_username_field => GetUsernameField() -> nsAString);
+    fn get_username_field(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.username_field))
+    }
+
+    xpcom_method!(set_username_field => SetUsernameField(origin: *const nsAString));
+    fn set_username_field(&self, username_field: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_password => GetPassword() -> nsAString);
+    fn get_password(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.password))
+    }
+
+    xpcom_method!(set_password => SetPassword(origin: *const nsAString));
+    fn set_password(&self, password: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_password_field => GetPasswordField() -> nsAString);
+    fn get_password_field(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.password_field))
+    }
+
+    xpcom_method!(set_password_field => SetPasswordField(origin: *const nsAString));
+    fn set_password_field(&self, password_field: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(equals => Equals(other: *const nsILoginInfo) -> bool);
+    fn equals(&self, other: &nsILoginInfo) -> Result<bool, nsresult> {
+        Err(NS_ERROR_NOT_IMPLEMENTED)
+    }
+
+    xpcom_method!(matches => Matches(aLoginInfo: *const nsILoginInfo, ignorePassword: bool) -> bool);
+    fn matches(&self, login_info: &nsILoginInfo, ignore_password: bool) -> Result<bool, nsresult> {
+        Err(NS_ERROR_NOT_IMPLEMENTED)
+    }
+
+    xpcom_method!(clone => Clone() -> *const nsILoginInfo);
+    fn clone(&self) -> Result<RefPtr<nsILoginInfo>, nsresult> {
+        Ok(RefPtr::new(RawLogin::allocate(InitRawLogin {
+            login: self.login.clone()
+        }).coerce::<nsILoginInfo>()))
+    }
+}
+
+// `nsILoginMetaInfo` methods.
+impl RawLogin {
+    xpcom_method!(get_origin => GetGuid() -> nsAString);
+    fn get_guid(&self) -> Result<nsString, nsresult> {
+        Ok(nsString::from(&*self.login.guid.as_str()))
+    }
+
+    xpcom_method!(set_origin => SetGuid(guid: *const nsAString));
+    fn set_guid(&self, guid: &nsAString) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_time_created => GetTimeCreated() -> u64);
+    fn get_time_created(&self) -> Result<u64, nsresult> {
+        Ok(self.login.time_created as u64)
+    }
+
+    xpcom_method!(set_time_created => SetTimeCreated(time_created: u64));
+    fn set_time_created(&self, time_created: u64) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_time_last_used => GetTimeLastUsed() -> u64);
+    fn get_time_last_used(&self) -> Result<u64, nsresult> {
+        Ok(self.login.time_last_used as u64)
+    }
+
+    xpcom_method!(set_time_last_used => SetTimeLastUsed(time: u64));
+    fn set_time_last_used(&self, time: u64) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_time_password_changed => GetTimePasswordChanged() -> u64);
+    fn get_time_password_changed(&self) -> Result<u64, nsresult> {
+        Ok(self.login.time_password_changed as u64)
+    }
+
+    xpcom_method!(set_time_password_changed => SetTimePasswordChanged(time: u64));
+    fn set_time_password_changed(&self, time: u64) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
+
+    xpcom_method!(get_times_used => GetTimesUsed() -> u32);
+    fn get_times_used(&self) -> Result<u32, nsresult> {
+        Ok(self.login.times_used as u32)
+    }
+
+    xpcom_method!(set_times_used => SetTimesUsed(times: u32));
+    fn set_times_used(&self, times: u32) -> Result<(), nsresult> {
+        Err(NS_ERROR_FAILURE)
+    }
 }
 
 #[derive(Default)]
@@ -153,8 +328,11 @@ impl LoginManager {
             time_last_used: 0i64,
             times_used: 0,
         };
-        self.engine.add(login).expect("Failed to add login! 😱");
-        Err(NS_OK)
+        let new_guid = self.engine.add(login).expect("Failed to add login! 😱");
+        let added_login = self.engine.get(&new_guid).expect("Failed to fetch login 😭").expect("The login we literally just added doesn't exist 🤪");
+        Ok(RefPtr::new(RawLogin::allocate(InitRawLogin {
+            login: added_login,
+        }).coerce::<nsILoginInfo>()))
     }
 
     xpcom_method!(remove_login => RemoveLogin(login: *const nsILoginInfo));
@@ -178,7 +356,8 @@ impl LoginManager {
 
     xpcom_method!(remove_all_logins => RemoveAllLogins());
     fn remove_all_logins(&self) -> Result<(), nsresult> {
-        Err(NS_ERROR_NOT_IMPLEMENTED)
+        self.engine.wipe().expect("Failed to wipe 🚿");
+        Ok(())
     }
 
     xpcom_method!(get_all_logins => GetAllLogins() -> ThinVec<RefPtr<nsILoginInfo>>);
