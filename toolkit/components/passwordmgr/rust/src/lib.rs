@@ -9,7 +9,7 @@ extern crate xpcom;
 extern crate cstr;
 
 use logins::{Error, Login, PasswordEngine};
-use nserror::{nsresult, NS_ERROR_NOT_IMPLEMENTED, NS_OK, NS_ERROR_FAILURE};
+use nserror::{nsresult, NS_ERROR_FAILURE, NS_ERROR_NOT_IMPLEMENTED, NS_OK};
 use nsstring::{nsAString, nsString};
 use thin_vec::ThinVec;
 use uuid::Uuid;
@@ -33,10 +33,29 @@ struct InitRawLogin {
     login: Login,
 }
 
+impl RawLogin {
+    fn new(login: Login) -> RefPtr<RawLogin> {
+        RawLogin::allocate(InitRawLogin { login })
+    }
+
+    fn coerce_to_owned(&self) -> RefPtr<nsILoginInfo> {
+        RefPtr::new(self.coerce::<nsILoginInfo>())
+    }
+}
+
 // `nsILoginInfo` methods.
 impl RawLogin {
     xpcom_method!(init => Init(aOrigin: *const nsAString, aFormActionOrigin: *const nsAString, aHttpRealm: *const nsAString, aUsername: *const nsAString, aPassword: *const nsAString, aUsernameField: *const nsAString, aPasswordField: *const nsAString));
-    fn init(&self, origin: &nsAString, form_action_origin: Option<&nsAString>, http_realm: Option<&nsAString>, username: Option<&nsAString>, password: Option<&nsAString>, username_field: Option<&nsAString>, password_field: Option<&nsAString>) -> Result<(), nsresult> {
+    fn init(
+        &self,
+        origin: &nsAString,
+        form_action_origin: Option<&nsAString>,
+        http_realm: Option<&nsAString>,
+        username: Option<&nsAString>,
+        password: Option<&nsAString>,
+        username_field: Option<&nsAString>,
+        password_field: Option<&nsAString>,
+    ) -> Result<(), nsresult> {
         Err(NS_ERROR_FAILURE)
     }
 
@@ -62,7 +81,9 @@ impl RawLogin {
 
     xpcom_method!(get_form_action_origin => GetFormActionOrigin() -> nsAString);
     fn get_form_action_origin(&self) -> Result<nsString, nsresult> {
-        Ok(nsString::from(&*self.login.form_submit_url.clone().unwrap_or_default()))
+        Ok(nsString::from(
+            &*self.login.form_submit_url.clone().unwrap_or_default(),
+        ))
     }
 
     xpcom_method!(set_form_action_origin => SetFormActionOrigin(origin: *const nsAString));
@@ -72,7 +93,9 @@ impl RawLogin {
 
     xpcom_method!(get_form_submit_url => GetFormSubmitURL() -> nsAString);
     fn get_form_submit_url(&self) -> Result<nsString, nsresult> {
-        Ok(nsString::from(&*self.login.form_submit_url.clone().unwrap_or_default()))
+        Ok(nsString::from(
+            &*self.login.form_submit_url.clone().unwrap_or_default(),
+        ))
     }
 
     xpcom_method!(set_form_submit_url => SetFormSubmitURL(origin: *const nsAString));
@@ -82,7 +105,9 @@ impl RawLogin {
 
     xpcom_method!(get_http_realm => GetHttpRealm() -> nsAString);
     fn get_http_realm(&self) -> Result<nsString, nsresult> {
-        Ok(nsString::from(&*self.login.http_realm.clone().unwrap_or_default()))
+        Ok(nsString::from(
+            &*self.login.http_realm.clone().unwrap_or_default(),
+        ))
     }
 
     xpcom_method!(set_http_realm => SetHttpRealm(http_realm: *const nsAString));
@@ -142,9 +167,7 @@ impl RawLogin {
 
     xpcom_method!(clone => Clone() -> *const nsILoginInfo);
     fn clone(&self) -> Result<RefPtr<nsILoginInfo>, nsresult> {
-        Ok(RefPtr::new(RawLogin::allocate(InitRawLogin {
-            login: self.login.clone()
-        }).coerce::<nsILoginInfo>()))
+        Ok(RawLogin::new(self.login.clone()).coerce_to_owned())
     }
 }
 
@@ -308,6 +331,10 @@ impl LoginManager {
         unsafe { new_login.GetHostname(&mut *hostname) }
             .to_result()
             .expect("No hostname 🙊");
+        let mut username = nsString::new();
+        unsafe { new_login.GetUsername(&mut *username) }
+            .to_result()
+            .expect("No username 🙊");
         let mut password = nsString::new();
         unsafe { new_login.GetPassword(&mut *password) }
             .to_result()
@@ -318,7 +345,8 @@ impl LoginManager {
                 .expect("What kind of hostname are you passing? 😳"),
             form_submit_url: None,
             http_realm: Some("foobar".to_string()),
-            username: String::new(),
+            username: String::from_utf16(&*username)
+                .expect("What kind of username are you passing? 😳"),
             password: String::from_utf16(&*hostname)
                 .expect("What kind of password are you passing? 😳"),
             username_field: String::new(),
@@ -329,10 +357,12 @@ impl LoginManager {
             times_used: 0,
         };
         let new_guid = self.engine.add(login).expect("Failed to add login! 😱");
-        let added_login = self.engine.get(&new_guid).expect("Failed to fetch login 😭").expect("The login we literally just added doesn't exist 🤪");
-        Ok(RefPtr::new(RawLogin::allocate(InitRawLogin {
-            login: added_login,
-        }).coerce::<nsILoginInfo>()))
+        let added_login = self
+            .engine
+            .get(&new_guid)
+            .expect("Failed to fetch login 😭")
+            .expect("The login we literally just added doesn't exist 🤪");
+        Ok(RawLogin::new(added_login).coerce_to_owned())
     }
 
     xpcom_method!(remove_login => RemoveLogin(login: *const nsILoginInfo));
@@ -362,7 +392,11 @@ impl LoginManager {
 
     xpcom_method!(get_all_logins => GetAllLogins() -> ThinVec<RefPtr<nsILoginInfo>>);
     fn get_all_logins(&self) -> Result<ThinVec<RefPtr<nsILoginInfo>>, nsresult> {
-        Err(NS_ERROR_NOT_IMPLEMENTED)
+        let logins = self.engine.list().expect("Failed to list logins 📝");
+        Ok(logins
+            .into_iter()
+            .map(|login| RawLogin::new(login).coerce_to_owned())
+            .collect())
     }
 
     xpcom_method!(get_all_disabled_hosts => GetAllDisabledHosts() -> ThinVec<nsString>);

@@ -37,7 +37,8 @@ RustLoginManagerWrapper.prototype = {
   },
 
   async getAllLoginsAsync() {
-    throw new Error("Not implemented");
+    // Actually synchronous. 🤷‍♀️
+    return this._backend.getAllLogins();
   },
 };
 
