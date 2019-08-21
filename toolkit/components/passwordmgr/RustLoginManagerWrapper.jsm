@@ -1,5 +1,11 @@
 const { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
 
+ChromeUtils.defineModuleGetter(
+  this,
+  "LoginHelper",
+  "resource://gre/modules/LoginHelper.jsm"
+);
+
 /// A wrapper around the Rust-implemented `nsILoginManagerBase`. This exists
 /// because Rust XPCOM doesn't support `jsval`s (including promises), so
 /// we need to implement the extra methods on `nsILoginManager` in JS
@@ -21,7 +27,9 @@ RustLoginManagerWrapper.prototype = {
   ]),
 
   addLogin(login) {
-    return this._backend.addLogin(login);
+    let newLogin = this._backend.addLogin(login);
+    LoginHelper.notifyStorageChanged("addLogin", newLogin);
+    return newLogin;
   },
 
   removeAllLogins() {
