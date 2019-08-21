@@ -8,23 +8,59 @@ extern crate xpcom;
 #[macro_use]
 extern crate cstr;
 
-use nserror::{nsresult, NS_OK, NS_ERROR_NOT_IMPLEMENTED};
+use logins::{Error, Login, PasswordEngine};
+use nserror::{nsresult, NS_ERROR_NOT_IMPLEMENTED, NS_OK};
 use nsstring::{nsAString, nsString};
 use thin_vec::ThinVec;
+use uuid::Uuid;
 use xpcom::{
     interfaces::{
-        nsILoginManagerBase, nsILoginInfo, nsISupports, nsIPropertyBag, nsIFile,
+        nsIFile, nsILoginInfo, nsILoginManagerBase, nsILoginMetaInfo, nsIPropertyBag, nsISupports,
     },
     RefPtr, XpCom,
 };
-use logins::{PasswordEngine, Error};
 
 #[no_mangle]
-pub unsafe extern "C" fn NS_NewRustLoginManager(
-    result: *mut *const nsILoginManagerBase,
-) {
+pub unsafe extern "C" fn NS_NewRustLoginManager(result: *mut *const nsILoginManagerBase) {
     let manager = LoginManager::new();
     RefPtr::new(manager.coerce::<nsILoginManagerBase>()).forget(&mut *result);
+}
+
+#[derive(Default)]
+struct LoginMeta {
+    guid: String,
+    time_created: i64,
+    time_last_used: i64,
+    time_password_changed: i64,
+    times_used: i64,
+}
+
+impl LoginMeta {
+    fn new() -> LoginMeta {
+        let guid = Uuid::new_v4().hyphenated().to_string();
+        LoginMeta {
+            guid,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<&nsILoginMetaInfo> for LoginMeta {
+    fn from(meta: &nsILoginMetaInfo) -> LoginMeta {
+        let mut raw_guid = nsString::new();
+        unsafe { meta.GetGuid(&mut *raw_guid) }
+            .to_result()
+            .expect("oh no its empty 😬");
+        let guid = if raw_guid.is_empty() {
+            Uuid::new_v4().hyphenated().to_string()
+        } else {
+            String::from_utf16(&*raw_guid).expect("What kind of GUID are you passing? 😳")
+        };
+        LoginMeta {
+            guid,
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(xpcom)]
@@ -66,7 +102,10 @@ fn get_profile_dir() -> PathBuf {
 
     let mut profile_path = nsString::new();
     unsafe {
-        profile_dir.GetPath(&mut *profile_path).to_result().expect("Can't get profile directory path");
+        profile_dir
+            .GetPath(&mut *profile_path)
+            .to_result()
+            .expect("Can't get profile directory path");
     }
 
     let path = String::from_utf16(&profile_path[..]).expect("Can't convert profile path to string");
@@ -83,9 +122,39 @@ impl LoginManager {
     }
 
     xpcom_method!(add_login => AddLogin(login: *const nsILoginInfo) -> *const nsILoginInfo);
-    fn add_login(&self, login: &nsILoginInfo) -> Result<RefPtr<nsILoginInfo>, nsresult> {
+    fn add_login(&self, new_login: &nsILoginInfo) -> Result<RefPtr<nsILoginInfo>, nsresult> {
         println!("Adding login in Rust...");
-        Err(NS_ERROR_NOT_IMPLEMENTED)
+        let meta = if let Some(meta) = new_login.query_interface::<nsILoginMetaInfo>() {
+            LoginMeta::from(&*meta)
+        } else {
+            LoginMeta::new()
+        };
+        let mut hostname = nsString::new();
+        unsafe { new_login.GetHostname(&mut *hostname) }
+            .to_result()
+            .expect("No hostname 🙊");
+        let mut password = nsString::new();
+        unsafe { new_login.GetPassword(&mut *password) }
+            .to_result()
+            .expect("No password 🙊");
+        let login = Login {
+            guid: meta.guid.into(),
+            hostname: String::from_utf16(&*hostname)
+                .expect("What kind of hostname are you passing? 😳"),
+            form_submit_url: None,
+            http_realm: Some("foobar".to_string()),
+            username: String::new(),
+            password: String::from_utf16(&*hostname)
+                .expect("What kind of password are you passing? 😳"),
+            username_field: String::new(),
+            password_field: String::new(),
+            time_created: 0i64,
+            time_password_changed: 0i64,
+            time_last_used: 0i64,
+            times_used: 0,
+        };
+        self.engine.add(login).expect("Failed to add login! 😱");
+        Err(NS_OK)
     }
 
     xpcom_method!(remove_login => RemoveLogin(login: *const nsILoginInfo));
@@ -94,7 +163,11 @@ impl LoginManager {
     }
 
     xpcom_method!(modify_login => ModifyLogin(old_login: *const nsILoginInfo, new_login_data: *const nsISupports));
-    fn modify_login(&self, old_login: &nsILoginInfo, new_login_data: &nsISupports) -> Result<(), nsresult> {
+    fn modify_login(
+        &self,
+        old_login: &nsILoginInfo,
+        new_login_data: &nsISupports,
+    ) -> Result<(), nsresult> {
         if let Some(login) = new_login_data.query_interface::<nsILoginInfo>() {
             println!("Modifying login with new `nsILoginInfo`");
         } else if let Some(info) = new_login_data.query_interface::<nsIPropertyBag>() {
@@ -129,17 +202,30 @@ impl LoginManager {
     }
 
     xpcom_method!(find_logins => FindLogins(hostname: *const nsAString, action_url: *const nsAString, http_realm: *const nsAString) -> ThinVec<RefPtr<nsILoginInfo>>);
-    fn find_logins(&self, hostname: &nsAString, action_url: Option<&nsAString>, http_realm: Option<&nsAString>) -> Result<ThinVec<RefPtr<nsILoginInfo>>, nsresult> {
+    fn find_logins(
+        &self,
+        hostname: &nsAString,
+        action_url: Option<&nsAString>,
+        http_realm: Option<&nsAString>,
+    ) -> Result<ThinVec<RefPtr<nsILoginInfo>>, nsresult> {
         Err(NS_ERROR_NOT_IMPLEMENTED)
     }
 
     xpcom_method!(count_logins => CountLogins(hostname: *const nsAString, action_url: *const nsAString, http_realm: *const nsAString) -> u32);
-    fn count_logins(&self, hostname: &nsAString, action_url: Option<&nsAString>, http_realm: Option<&nsAString>) -> Result<u32, nsresult> {
+    fn count_logins(
+        &self,
+        hostname: &nsAString,
+        action_url: Option<&nsAString>,
+        http_realm: Option<&nsAString>,
+    ) -> Result<u32, nsresult> {
         Err(NS_ERROR_NOT_IMPLEMENTED)
     }
 
     xpcom_method!(search_logins => SearchLogins(match_data: *const nsIPropertyBag) -> ThinVec<RefPtr<nsILoginInfo>>);
-    fn search_logins(&self, match_data: &nsIPropertyBag) -> Result<ThinVec<RefPtr<nsILoginInfo>>, nsresult> {
+    fn search_logins(
+        &self,
+        match_data: &nsIPropertyBag,
+    ) -> Result<ThinVec<RefPtr<nsILoginInfo>>, nsresult> {
         Err(NS_ERROR_NOT_IMPLEMENTED)
     }
 
