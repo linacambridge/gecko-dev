@@ -347,7 +347,7 @@ impl LoginManager {
             http_realm: Some("foobar".to_string()),
             username: String::from_utf16(&*username)
                 .expect("What kind of username are you passing? 😳"),
-            password: String::from_utf16(&*hostname)
+            password: String::from_utf16(&*password)
                 .expect("What kind of password are you passing? 😳"),
             username_field: String::new(),
             password_field: String::new(),
