@@ -187,12 +187,7 @@ already_AddRefed<Service> Service::getSingleton() {
   // Ensure that we are using the same version of SQLite that we compiled with
   // or newer.  Our configure check ensures we are using a new enough version
   // at compile time.
-  if (SQLITE_VERSION_NUMBER > ::sqlite3_libversion_number() ||
-      !::sqlite3_compileoption_used("SQLITE_SECURE_DELETE") ||
-      !::sqlite3_compileoption_used("SQLITE_THREADSAFE=1") ||
-      !::sqlite3_compileoption_used("SQLITE_ENABLE_FTS3") ||
-      !::sqlite3_compileoption_used("SQLITE_ENABLE_UNLOCK_NOTIFY") ||
-      !::sqlite3_compileoption_used("SQLITE_ENABLE_DBSTAT_VTAB")) {
+  if (SQLITE_VERSION_NUMBER > ::sqlite3_libversion_number()) {
     nsCOMPtr<nsIPromptService> ps(do_GetService(NS_PROMPTSERVICE_CONTRACTID));
     if (ps) {
       nsAutoString title, message;
