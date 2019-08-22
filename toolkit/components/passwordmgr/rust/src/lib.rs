@@ -26,6 +26,10 @@ pub unsafe extern "C" fn NS_NewRustLoginManager(result: *mut *const nsILoginMana
     RefPtr::new(manager.coerce::<nsILoginManagerBase>()).forget(&mut *result);
 }
 
+fn are_strings_equal(a: &str, b: &nsAString) -> bool {
+    a.encode_utf16().eq(b.iter().copied())
+}
+
 #[derive(xpcom)]
 #[xpimplements(nsILoginInfo, nsILoginMetaInfo)]
 #[refcnt = "nonatomic"]
@@ -421,7 +425,38 @@ impl LoginManager {
         action_url: Option<&nsAString>,
         http_realm: Option<&nsAString>,
     ) -> Result<ThinVec<RefPtr<nsILoginInfo>>, nsresult> {
-        Err(NS_ERROR_NOT_IMPLEMENTED)
+        let logins = self
+            .engine
+            .list()
+            .expect("Failed to list all logins so we can search them 📝");
+        Ok(logins
+            .into_iter()
+            .filter_map(|login| {
+                if !are_strings_equal(&login.hostname, hostname) {
+                    return None;
+                }
+
+                let form_submit_urls_match = match (&login.form_submit_url, action_url) {
+                    (Some(a), Some(b)) => are_strings_equal(a, b),
+                    (None, None) => true,
+                    _ => false,
+                };
+                if !form_submit_urls_match {
+                    return None;
+                }
+
+                let http_realms_match = match (&login.http_realm, http_realm) {
+                    (Some(a), Some(b)) => are_strings_equal(a, b),
+                    (None, None) => true,
+                    _ => false,
+                };
+                if !http_realms_match {
+                    return None;
+                }
+
+                Some(RawLogin::new(login).coerce_to_owned())
+            })
+            .collect())
     }
 
     xpcom_method!(count_logins => CountLogins(hostname: *const nsAString, action_url: *const nsAString, http_realm: *const nsAString) -> u32);
