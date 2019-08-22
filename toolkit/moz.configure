@@ -1763,3 +1763,9 @@ def new_cert_storage(milestone):
 
 set_config('MOZ_NEW_CERT_STORAGE', True, when=new_cert_storage)
 set_define('MOZ_NEW_CERT_STORAGE', True, when=new_cert_storage)
+
+# Rust login manager implementation
+# ==============================================================
+
+set_config('MOZ_RUST_LOGINS', True)
+set_define('MOZ_RUST_LOGINS', True)

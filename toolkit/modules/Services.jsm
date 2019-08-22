@@ -91,7 +91,7 @@ var initTable = {
   ],
   intl: ["@mozilla.org/mozintl;1", "mozIMozIntl"],
   locale: ["@mozilla.org/intl/localeservice;1", "mozILocaleService"],
-  logins: ["@mozilla.org/login-manager;1", "nsILoginManager"],
+  logins: ["@mozilla.org/login-manager/rust-wrapper;1", "nsILoginManager"],
   mm: ["@mozilla.org/globalmessagemanager;1", "nsISupports"],
   obs: ["@mozilla.org/observer-service;1", "nsIObserverService"],
   perms: ["@mozilla.org/permissionmanager;1", "nsIPermissionManager"],

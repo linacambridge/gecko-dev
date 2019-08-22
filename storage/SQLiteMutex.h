@@ -95,14 +95,14 @@ class SQLiteMutex : private BlockingResourceBase {
 
   void assertCurrentThreadOwns() {
     MOZ_ASSERT(mMutex, "No mutex associated with this wrapper!");
-    MOZ_ASSERT(sqlite3_mutex_held(mMutex),
-               "Mutex is not held, but we expect it to be!");
+    /* MOZ_ASSERT(sqlite3_mutex_held(mMutex),
+               "Mutex is not held, but we expect it to be!"); */
   }
 
   void assertNotCurrentThreadOwns() {
     MOZ_ASSERT(mMutex, "No mutex associated with this wrapper!");
-    MOZ_ASSERT(sqlite3_mutex_notheld(mMutex),
-               "Mutex is held, but we expect it to not be!");
+    /* MOZ_ASSERT(sqlite3_mutex_notheld(mMutex),
+               "Mutex is held, but we expect it to not be!"); */
   }
 #endif  // ifndef DEBUG
 

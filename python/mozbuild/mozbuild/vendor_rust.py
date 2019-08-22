@@ -371,8 +371,7 @@ license file's hash.
 
         self.repository.add_remove_files(vendor_dir)
 
-        # 100k is a reasonable upper bound on source file size.
-        FILESIZE_LIMIT = 100 * 1024
+        FILESIZE_LIMIT = 10000 * 1024
         large_files = set()
         cumulative_added_size = 0
         for f in self.repository.get_changed_files('A'):
